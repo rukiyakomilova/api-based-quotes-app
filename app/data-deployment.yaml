@@ -1,4 +1,4 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
@@ -9,7 +9,10 @@ metadata:
     io.kompose.service: data
   name: data
 spec:
-  replicas: 1
+  replicas: 1 
+  selector:
+    matchLabels:
+      io.kompose.service: data
   strategy: {}
   template:
     metadata:
@@ -22,15 +25,18 @@ spec:
         io.kompose.service: data
     spec:
       containers:
-      - env:
-        - name: MYSQL_ALLOW_EMPTY_PASSWORD
-          value: "yes"
-        - name: MYSQL_DATABASE
-          value: mydatabase
-        - name: MYSQL_PASSWORD
-          value: root
-        - name: MYSQL_ROOT_PASSWORD
-          value: root
+              # - env:
+              # - name: MYSQL_ALLOW_EMPTY_PASSWORD
+              #  value: "yes"
+      - envFrom:
+        - secretRef:
+                name: data-service-secret
+    #   - name: MYSQL_DATABASE
+    #       value: mydatabase
+    #    - name: MYSQL_PASSWORD
+    #     value: root
+    #     - name: MYSQL_ROOT_PASSWORD
+    #      value: root
         image: rukiyakomilova/data:v1
         name: data
         ports:
@@ -38,3 +44,15 @@ spec:
         resources: {}
       restartPolicy: Always
 status: {}
+
+---
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: data-service-secret
+type: Opaque
+data:
+  MYSQL_DATABASE: bXlkYXRhYmFzZQ==
+  MYSQL_PASSWORD: cm9vdA==
+  MYSQL_ROOT_PASSWORD: cm9vdA==                                        
