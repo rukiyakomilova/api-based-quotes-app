@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   annotations:
     kompose.cmd: kompose convert -f docker-compose.yml
@@ -9,11 +9,11 @@ metadata:
     io.kompose.service: data
   name: data
 spec:
-  replicas: 1 
+  serviceName: data
+  replicas: 1
   selector:
     matchLabels:
       io.kompose.service: data
-  strategy: {}
   template:
     metadata:
       annotations:
@@ -25,28 +25,49 @@ spec:
         io.kompose.service: data
     spec:
       containers:
-              # - env:
-              # - name: MYSQL_ALLOW_EMPTY_PASSWORD
-              #  value: "yes"
-      - envFrom:
-        - secretRef:
-                name: data-service-secret
+        - name: data
+          image: rukiyakomilova/data:v1
+          env:
+            - name: MYSQL_DATABASE 
+              valueFrom:
+                secretKeyRef:
+                  name: data-service-secret
+                  key: MYSQL_DATABASE
+            - name: MYSQL_PASSWORD 
+              valueFrom: 
+                secretKeyRef: 
+                  name: data-service-secret
+                  key: MYSQL_PASSWORD
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef: 
+                  name: data-service-secret
+                  key: MYSQL_ROOT_PASSWORD
+        # - env:
+    # - name: MYSQL_ALLOW_EMPTY_PASSWORD
+    #  value: "yes"
     #   - name: MYSQL_DATABASE
     #       value: mydatabase
     #    - name: MYSQL_PASSWORD
     #     value: root
     #     - name: MYSQL_ROOT_PASSWORD
     #      value: root
-        image: rukiyakomilova/data:v1
-        name: data
-        ports:
-        - containerPort: 3306
-        resources: {}
-      restartPolicy: Always
-status: {}
-
+          ports:
+          - containerPort: 3306
+          volumeMounts:   
+          - name: data
+            mountPath: /var/lib/mysql
+            subPath: mysql
+  volumeClaimTemplates: #only statefulset has this
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "data-sc"
+      resources:
+        requests:
+          storage: 4Gi
 ---
-
 apiVersion: v1
 kind: Secret
 metadata:
@@ -55,4 +76,4 @@ type: Opaque
 data:
   MYSQL_DATABASE: bXlkYXRhYmFzZQ==
   MYSQL_PASSWORD: cm9vdA==
-  MYSQL_ROOT_PASSWORD: cm9vdA==                                        
+  MYSQL_ROOT_PASSWORD: cm9vdA==

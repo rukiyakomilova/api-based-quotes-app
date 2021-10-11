@@ -27,8 +27,22 @@ spec:
       containers:
       - image: rukiyakomilova/quotes-back:v1
         name: back
+        env:
+          - name: SQLALCHEMY_DATABASE_URI
+            valueFrom:
+              secretKeyRef:
+                name: mybacksecret
+                key: SQLALCHEMY_DATABASE_URI
         ports:
         - containerPort: 3000
         resources: {}
       restartPolicy: Always
 status: {}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mybacksecret
+type: Opaque
+data:
+  SQLALCHEMY_DATABASE_URI: bXlzcWwrcHlteXNxbDovL3Jvb3Q6cm9vdEBkYXRhOjMzMDYvbXlkYXRhYmFzZQ==

@@ -13,7 +13,6 @@ spec:
   selector:
     matchLabels:
       io.kompose.service: data-script
-  strategy: {}
   template:
     metadata:
       annotations:
@@ -24,9 +23,55 @@ spec:
         io.kompose.network/myapp: "true"
         io.kompose.service: data-script
     spec:
+      initContainers:
+        - name: init-data-scriptservice
+          image: rukiyakomilova/data-script:v2
+          command: ['sh', '-c', "until mysql -h ${MYSQL_DB_HOST} -u ${MYSQL_USER} -p${MYSQL_USER_PASSWORD} -e 'show databases;'; do echo waiting for mydb; sleep 2; done"]
+          env:
+          - name: MYSQL_DB_HOST
+            valueFrom:
+              secretKeyRef:
+                name: datascriptsecret
+                key: host
+          - name: MYSQL_USER
+            valueFrom:
+              secretKeyRef:
+                name: datascriptsecret
+                key: user
+          - name: MYSQL_USER_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: datascriptsecret
+                key: password
       containers:
-      - image: rukiyakomilova/data-script:v1
+      - image: rukiyakomilova/data-script:v2
+        env:
+         - name: MYSQL_DB_HOST
+           valueFrom:
+            secretKeyRef:
+              name: datascriptsecret
+              key: host
+         - name: MYSQL_USER
+           valueFrom:
+            secretKeyRef:
+             name: datascriptsecret
+             key: user
+         - name: MYSQL_USER_PASSWORD
+           valueFrom:
+            secretKeyRef:
+             name: datascriptsecret
+             key: password
         name: data-script
         resources: {}
       restartPolicy: Always
 status: {}
+---
+apiVersion: v1
+data:
+  host: ZGF0YQo=
+  user: cm9vdAo=
+  password: cm9vdAo=
+kind: Secret
+metadata:
+  name: datascriptsecret
+type: Opaque
